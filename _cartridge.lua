@@ -31,27 +31,49 @@ cartridge.Complete = false
 cartridge.UseLogging = true
 
 -- Zone Definitions --
-local hqZone = Wherigo.Zone(cartridge)
-hqZone.Id = "39c8d039-0772-42fc-9850-d67019b6d743"
-hqZone.Name = "Nova Systems HQ"
-hqZone.Description = [[]]
-hqZone.Visible = false
-hqZone.DistanceRange = Distance(-1, "feet")
-hqZone.ShowObjects = "OnEnter"
-hqZone.ProximityRange = Distance(25, "feet")
-hqZone.AllowSetPositionTo = true
-hqZone.Active = false
-hqZone.Points = {
+local startZone = Wherigo.Zone(cartridge)
+startZone.Id = "39c8d039-0772-42fc-9850-d67019b6d743"
+startZone.Name = "Nova Systems HQ: Holding Centre"
+startZone.Description = [[]]
+startZone.Visible = false
+startZone.DistanceRange = Distance(-1, "feet")
+startZone.ShowObjects = "OnEnter"
+startZone.ProximityRange = Distance(25, "feet")
+startZone.AllowSetPositionTo = true
+startZone.Active = false
+startZone.Points = {
 	ZonePoint(-50, 50),
 	ZonePoint(50, 50),
 	ZonePoint(50, -50),
 	ZonePoint(-50, -50),
 }
-hqZone.OriginalPoint = ZonePoint(0, 0)
-hqZone.DistanceRangeUOM = "Feet"
-hqZone.ProximityRangeUOM = "Feet"
-hqZone.OutOfRangeName = ""
-hqZone.InRangeName = ""
+startZone.OriginalPoint = ZonePoint(0, 0)
+startZone.DistanceRangeUOM = "Feet"
+startZone.ProximityRangeUOM = "Feet"
+startZone.OutOfRangeName = ""
+startZone.InRangeName = ""
+
+local securityRoom = Wherigo.Zone(cartridge)
+securityRoom.Id = "39c8d039-0772-42fc-9850-d67019b6d743"
+securityRoom.Name = "Nova Systems HQ: Security Room"
+securityRoom.Description = [[]]
+securityRoom.Visible = false
+securityRoom.DistanceRange = Distance(-1, "feet")
+securityRoom.ShowObjects = "OnEnter"
+securityRoom.ProximityRange = Distance(25, "feet")
+securityRoom.AllowSetPositionTo = true
+securityRoom.Active = false
+securityRoom.Points = {
+	ZonePoint(-50, 50),
+	ZonePoint(50, 50),
+	ZonePoint(50, -50),
+	ZonePoint(-50, -50),
+}
+securityRoom.OriginalPoint = ZonePoint(0, 0)
+securityRoom.DistanceRangeUOM = "Feet"
+securityRoom.ProximityRangeUOM = "Feet"
+securityRoom.OutOfRangeName = ""
+securityRoom.InRangeName = ""
 
 -- Input definitions --
 local errCodeInput = Wherigo.ZInput(cartridge)
@@ -68,15 +90,14 @@ local accessKey = Wherigo.ZItem(cartridge)
 accessKey.Id = ""
 accessKey.Name = "Access Card"
 accessKey.Description = [[A Nova Systems keycard. The front is defaced, so you can't identify the owner.
-
 The printed identifier on the back reads: NS-7A-041.]]
-accessKey.Visible = false
+accessKey.Visible = true
 accessKey.Icon = nil
 accessKey.Commands = {
 	Take = Wherigo.ZCommand({
 		Text = "Take",
 		CmdWith = false,
-		Enabled = false,
+		Enabled = true,
 		EmptyTargetListText = "Nothing available.",
 	}),
 }
@@ -85,6 +106,28 @@ accessKey.Commands["Take"].Id = "66a5f906-3c8f-4731-a4e9-3c21df9dc36a"
 accessKey.Commands["Take"].WorksWithAll = true
 accessKey.Locked = false
 accessKey.ObjectLocation = Wherigo.INVALID_ZONEPOINT
+accessKey:MoveTo(startZone)
+
+local startingRoomDoor = Wherigo.ZItem(cartridge)
+startingRoomDoor.Id = ""
+startingRoomDoor.Name = "Access Door"
+startingRoomDoor.Description = [[It's a door protected by a card scanner.]]
+startingRoomDoor.Visible = true
+startingRoomDoor.Icon = nil
+startingRoomDoor.Commands = {
+	Open = Wherigo.ZCommand({
+		Text = "Open",
+		CmdWith = false,
+		Enabled = true,
+		EmptyTargetListText = "Nothing available.",
+	}),
+}
+startingRoomDoor.Commands["Open"].Custom = true
+startingRoomDoor.Commands["Open"].Id = ""
+startingRoomDoor.Commands["Open"].WorksWithAll = true
+startingRoomDoor.Locked = false
+startingRoomDoor.ObjectLocation = Wherigo.INVALID_ZONEPOINT
+startingRoomDoor:MoveTo(startZone)
 
 -- Variables --
 local errCode = nil
@@ -104,18 +147,37 @@ local function check(s)
 	return true
 end
 
--- Cartridge functions --
-function cartridge:OnStart()
-	local pos = Player.ObjectLocation
+local function SetRoomPoints(room, pos)
 	local halfSide = 50
-	local cornerDistance = math.sqrt(halfSide ^ 2 + halfSide ^ 2)
+	local cornerDistance = math.sqrt(2 * halfSide ^ 2)
 
-	hqZone.Points = {
+	room.Points = {
 		Wherigo.TranslatePoint(pos, Distance(cornerDistance, "feet"), 45),
 		Wherigo.TranslatePoint(pos, Distance(cornerDistance, "feet"), 135),
 		Wherigo.TranslatePoint(pos, Distance(cornerDistance, "feet"), 225),
 		Wherigo.TranslatePoint(pos, Distance(cornerDistance, "feet"), 315),
 	}
+end
+
+local currentRoom = nil
+
+local function MoveToRoom(room)
+	if currentRoom then
+		currentRoom.Active = false
+		currentRoom.Visible = false
+	end
+
+	currentRoom = room
+	currentRoom.Active = true
+	currentRoom.Visible = true
+end
+
+-- Cartridge functions --
+function cartridge:OnStart()
+	local pos = Player.ObjectLocation
+
+	SetRoomPoints(startZone, pos)
+	SetRoomPoints(securityRoom, pos)
 
 	Wherigo.GetInput(errCodeInput)
 end
@@ -134,10 +196,8 @@ function errCodeInput:OnGetInput(input)
 			end,
 		})
 	else
-		hqZone.Active = true
-		accessKey.Visible = true
-		accessKey.Commands["Take"].Enabled = true
-		accessKey:MoveTo(hqZone)
+		MoveToRoom(startZone)
+
 		Wherigo.MessageBox({
 			Text = "Identified NSRC error code. Recovery protocol initiated.",
 			Buttons = { "Continue" },
@@ -153,7 +213,39 @@ end
 function accessKey:OnTake()
 	accessKey:MoveTo(Player)
 	accessKey.Commands["Take"].Enabled = false
-    Wherigo.ShowScreen(Wherigo.MAINSCREEN)
+	Wherigo.ShowScreen(Wherigo.MAINSCREEN)
+end
+
+function startingRoomDoor:OnOpen()
+	if not Player:Contains(accessKey) then
+		Wherigo.MessageBox({
+			Text = "You don't have anything that can open this door.",
+			Buttons = { "OK" },
+			Callback = function(action)
+				if action ~= nil then
+					Wherigo.ShowScreen(Wherigo.MAINSCREEN)
+				end
+			end,
+		})
+		return
+	end
+
+	Wherigo.ShowStatusText("Click!")
+	Wherigo.ShowScreen(Wherigo.MAINSCREEN)
+
+	if currentRoom == startZone then
+        startingRoomDoor.Name = "Door to Holding Centre"
+        startingRoomDoor.Description = [[It's a door protected by a card scanner.
+It leads to the Nova Systems Holding Centre.]]
+		MoveToRoom(securityRoom)
+	else
+        startingRoomDoor.Name = "Door to Security Room"
+        startingRoomDoor.Description = [[It's a door protected by a card scanner.
+It leads to the Nova Systems Security Room.]]        
+		MoveToRoom(startZone)
+	end
+
+    startingRoomDoor:MoveTo(currentRoom)
 end
 
 return cartridge
