@@ -87,7 +87,7 @@ errCodeInput.Text = "Please enter the error code that you're seeing on the machi
 
 -- Item definitions --
 local accessKey = Wherigo.ZItem(cartridge)
-accessKey.Id = ""
+accessKey.Id = "bad0443a-873b-4a58-966c-79c8722cbd21"
 accessKey.Name = "Access Card"
 accessKey.Description = [[A Nova Systems keycard. The front is defaced, so you can't identify the owner.
 The printed identifier on the back reads: NS-7A-041.]]
@@ -109,7 +109,7 @@ accessKey.ObjectLocation = Wherigo.INVALID_ZONEPOINT
 accessKey:MoveTo(startZone)
 
 local startingRoomDoor = Wherigo.ZItem(cartridge)
-startingRoomDoor.Id = ""
+startingRoomDoor.Id = "071b0a02-a9de-49bd-ac66-3c9c12b015cc"
 startingRoomDoor.Name = "Access Door"
 startingRoomDoor.Description = [[It's a door protected by a card scanner.]]
 startingRoomDoor.Visible = true
@@ -123,7 +123,7 @@ startingRoomDoor.Commands = {
 	}),
 }
 startingRoomDoor.Commands["Open"].Custom = true
-startingRoomDoor.Commands["Open"].Id = ""
+startingRoomDoor.Commands["Open"].Id = "360fa55b-2b41-4d31-bd82-366f03723269"
 startingRoomDoor.Commands["Open"].WorksWithAll = true
 startingRoomDoor.Locked = false
 startingRoomDoor.ObjectLocation = Wherigo.INVALID_ZONEPOINT
