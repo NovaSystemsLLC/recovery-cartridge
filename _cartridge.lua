@@ -234,18 +234,18 @@ function startingRoomDoor:OnOpen()
 	Wherigo.ShowScreen(Wherigo.MAINSCREEN)
 
 	if currentRoom == startZone then
-        startingRoomDoor.Name = "Door to Holding Centre"
-        startingRoomDoor.Description = [[It's a door protected by a card scanner.
+		startingRoomDoor.Name = "Door to Holding Centre"
+		startingRoomDoor.Description = [[It's a door protected by a card scanner.
 It leads to the Nova Systems Holding Centre.]]
 		MoveToRoom(securityRoom)
 	else
-        startingRoomDoor.Name = "Door to Security Room"
-        startingRoomDoor.Description = [[It's a door protected by a card scanner.
-It leads to the Nova Systems Security Room.]]        
+		startingRoomDoor.Name = "Door to Security Room"
+		startingRoomDoor.Description = [[It's a door protected by a card scanner.
+It leads to the Nova Systems Security Room.]]
 		MoveToRoom(startZone)
 	end
 
-    startingRoomDoor:MoveTo(currentRoom)
+	startingRoomDoor:MoveTo(currentRoom)
 end
 
 return cartridge
