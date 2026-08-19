@@ -5,9 +5,11 @@ Player = Wherigo.Player
 
 local cartridge = Wherigo.ZCartridge()
 
--- Media Definitions --
+--#region Media definitions
 
--- Cartridge Info --
+--#endregion
+
+--#region Cartridge info
 cartridge.Id = "305e2634-214d-4f9f-8f74-aca89a588948"
 cartridge.Name = "Nova Systems Recovery"
 cartridge.Description = "It's a recovery cartridge. You need a code from a machine to use it."
@@ -29,8 +31,9 @@ cartridge.StateId = "1"
 cartridge.CountryId = "2"
 cartridge.Complete = false
 cartridge.UseLogging = true
+--#endregion
 
--- Zone Definitions --
+--#region Zone definitions
 local startZone = Wherigo.Zone(cartridge)
 startZone.Id = "39c8d039-0772-42fc-9850-d67019b6d743"
 startZone.Name = "Nova Systems HQ: Holding Centre"
@@ -74,8 +77,9 @@ securityRoom.DistanceRangeUOM = "Feet"
 securityRoom.ProximityRangeUOM = "Feet"
 securityRoom.OutOfRangeName = ""
 securityRoom.InRangeName = ""
+--#endregion
 
--- Input definitions --
+--#region Input definitions
 local errCodeInput = Wherigo.ZInput(cartridge)
 errCodeInput.Id = "cc406393-332a-48ea-a1cb-6866d546b24e"
 errCodeInput.Name = "Error Code"
@@ -84,8 +88,9 @@ errCodeInput.Visible = true
 errCodeInput.InputType = "Text"
 errCodeInput.InputVariableId = "c2002b8d-9fdb-4b7b-b98d-600971d5aac7"
 errCodeInput.Text = "Please enter the error code that you're seeing on the machine."
+--#endregion
 
--- Item definitions --
+--#region Global item definitions
 local accessKey = Wherigo.ZItem({
 	Cartridge = cartridge,
 })
@@ -98,7 +103,9 @@ accessKey.Icon = nil
 accessKey.Commands = {}
 accessKey.Locked = false
 accessKey.ObjectLocation = Wherigo.INVALID_ZONEPOINT
+--#endregion
 
+--#region Holding Cell item definitions
 local startingRoomTerminal = Wherigo.ZItem({
 	Cartridge = cartridge,
 	Container = startZone,
@@ -209,8 +216,9 @@ startingRoomDoor.Commands["Open"].Id = "360fa55b-2b41-4d31-bd82-366f03723269"
 startingRoomDoor.Commands["Open"].WorksWithAll = true
 startingRoomDoor.Locked = false
 startingRoomDoor.ObjectLocation = Wherigo.INVALID_ZONEPOINT
+--#endregion
 
--- Variables --
+--#region Variables & Misc functions
 local errCode = nil
 local err = { 0x4e, 0x53, 0x52, 0x43, 0x2d, 0x34, 0x37, 0x33, 0x38 }
 
@@ -256,8 +264,11 @@ end
 local startTerminalUnlocked = false
 local keyOutOfDrawer = false
 local safeOutOfDrawer = false
+--#endregion
 
--- Cartridge functions --
+-- Gameplay
+
+--#region Cartridge startup
 function cartridge:OnStart()
 	local pos = Player.ObjectLocation
 
@@ -294,7 +305,9 @@ function errCodeInput:OnGetInput(input)
 		})
 	end
 end
+--#endregion
 
+--#region Holding Cell
 function startingRoomTerminal:OnScan()
 	if not Player:Contains(accessKey) then
 		Wherigo.ShowStatusText("You don't have anything that you can scan here.")
@@ -376,5 +389,6 @@ It leads to the Nova Systems Security Room.]]
 
 	startingRoomDoor:MoveTo(currentRoom)
 end
+--#endregion
 
 return cartridge
