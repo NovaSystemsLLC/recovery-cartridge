@@ -138,42 +138,9 @@ startingRoomTerminal.Commands["Use"].WorksWithAll = true
 startingRoomTerminal.Locked = false
 startingRoomTerminal.ObjectLocation = Wherigo.INVALID_ZONEPOINT
 
-local startingRoomDrawer = Wherigo.ZItem({
-	Cartridge = cartridge,
-	Container = startZone,
-})
-startingRoomDrawer.Id = "5942eba0-eefb-4443-a878-8811d64ebc83"
-startingRoomDrawer.Name = "Side Drawer"
-startingRoomDrawer.Description = [[There's an access card in here, as well as a locked safe.]]
-startingRoomDrawer.Visible = true
-startingRoomDrawer.Icon = nil
-startingRoomDrawer.Commands = {
-	TakeCard = Wherigo.ZCommand({
-		Text = "Take Card",
-		CmdWith = false,
-		Enabled = true,
-		EmptyTargetListText = "Nothing useful.",
-	}),
-	TakeSafe = Wherigo.ZCommand({
-		Text = "Take Safe",
-		CmdWith = false,
-		Enabled = true,
-		EmptyTargetListText = "Nothing useful.",
-	}),
-}
-startingRoomDrawer.Commands["TakeCard"].Custom = true
-startingRoomDrawer.Commands["TakeCard"].Id = "8cf4f1fc-dd7d-4171-8ca2-4abc11983463"
-startingRoomDrawer.Commands["TakeCard"].WorksWithAll = true
-startingRoomDrawer.Commands["TakeSafe"].Custom = true
-startingRoomDrawer.Commands["TakeSafe"].Id = "b8a4aace-873b-4f10-8cdc-f64afcd71e32"
-startingRoomDrawer.Commands["TakeSafe"].WorksWithAll = true
-startingRoomDrawer.Locked = false
-startingRoomDrawer.ObjectLocation = Wherigo.INVALID_ZONEPOINT
-accessKey:MoveTo(startingRoomDrawer)
-
 local startingRoomSafe = Wherigo.ZItem({
 	Cartridge = cartridge,
-	Container = startingRoomDrawer,
+	Container = startZone,
 })
 startingRoomSafe.Id = "bff0074f-abbe-471a-98ae-66161aa30a8b"
 startingRoomSafe.Name = "Safe"
@@ -200,7 +167,8 @@ local startingRoomDoor = Wherigo.ZItem({
 })
 startingRoomDoor.Id = "071b0a02-a9de-49bd-ac66-3c9c12b015cc"
 startingRoomDoor.Name = "Access Door"
-startingRoomDoor.Description = [[It's a door protected by a card scanner.]]
+startingRoomDoor.Description = [[The heavy door is frozen halfway open from the power failure.
+There is just enough space to squeeze through to the next room.]]
 startingRoomDoor.Visible = true
 startingRoomDoor.Icon = nil
 startingRoomDoor.Commands = {
@@ -220,6 +188,7 @@ startingRoomDoor.ObjectLocation = Wherigo.INVALID_ZONEPOINT
 
 --#region Variables & Misc functions
 local errCode = nil
+local isPowerOn = false
 local err = { 0x4e, 0x53, 0x52, 0x43, 0x2d, 0x34, 0x37, 0x33, 0x38 }
 
 local function check(s, a)
@@ -262,8 +231,6 @@ local function MoveToRoom(room)
 end
 
 local startTerminalUnlocked = false
-local keyOutOfDrawer = false
-local safeOutOfDrawer = false
 --#endregion
 
 -- Gameplay
@@ -309,6 +276,11 @@ end
 
 --#region Holding Cell
 function startingRoomTerminal:OnScan()
+	if not isPowerOn then
+		Wherigo.ShowStatusText("No response.")
+		return
+	end
+
 	if not Player:Contains(accessKey) then
 		Wherigo.ShowStatusText("You don't have anything that you can scan here.")
 		return
@@ -316,6 +288,7 @@ function startingRoomTerminal:OnScan()
 
 	startTerminalUnlocked = true
 	startingRoomTerminal.Commands["Scan"].Enabled = false
+	startingRoomTerminal.Description = [[It's a computer terminal. The CRT monitor hums and glows green.]]
 	Wherigo.MessageBox({
 		Text = "The terminal screen lights up a warm glow.",
 		Buttons = { "OK" },
@@ -324,7 +297,7 @@ function startingRoomTerminal:OnScan()
 end
 
 function startingRoomTerminal:OnUse()
-	if not startTerminalUnlocked then
+	if not isPowerOn or not startTerminalUnlocked then
 		Wherigo.ShowStatusText("It doesn't seem to be working.")
 		return
 	end
@@ -333,57 +306,40 @@ function startingRoomTerminal:OnUse()
 	Wherigo.ShowStatusText("Not implemented")
 end
 
-function startingRoomDrawer:OnTakeCard()
-	accessKey:MoveTo(Player)
-	startingRoomDrawer.Commands["TakeCard"].Enabled = false
-	Wherigo.ShowStatusText("Access Card has been moved to your inventory.")
-
-	keyOutOfDrawer = true
-	if safeOutOfDrawer then
-		Wherigo.ShowScreen(Wherigo.MAINSCREEN)
-		startingRoomDrawer.Visible = false
-	else
-		startingRoomDrawer.Description = [[There's a locked safe in here.]]
-	end
-end
-
-function startingRoomDrawer:OnTakeSafe()
-	startingRoomSafe:MoveTo(startZone)
-	startingRoomDrawer.Commands["TakeSafe"].Enabled = false
-	Wherigo.ShowStatusText("The safe has been removed from the side drawer.")
-
-	safeOutOfDrawer = true
-	if keyOutOfDrawer then
-		Wherigo.ShowScreen(Wherigo.MAINSCREEN)
-		startingRoomDrawer.Visible = false
-	else
-		startingRoomDrawer.Description = [[There's an access card in here.]]
-	end
-end
-
 function startingRoomSafe:OnUnlock()
 	-- TODO: impl safe
 	Wherigo.ShowStatusText("Not implemented")
 end
 
 function startingRoomDoor:OnOpen()
-	if not Player:Contains(accessKey) then
-		Wherigo.ShowStatusText("You don't have anything that can open this door.")
-		return
+	if isPowerOn then
+		if not Player:Contains(accessKey) then
+			Wherigo.ShowStatusText("You don't have anything that can open this door.")
+			return
+		end
+		Wherigo.ShowStatusText("Click!")
 	end
 
-	Wherigo.ShowStatusText("Click!")
 	Wherigo.ShowScreen(Wherigo.MAINSCREEN)
-
 	if currentRoom == startZone then
 		startingRoomDoor.Name = "Door to Holding Centre"
-		startingRoomDoor.Description = [[It's a door protected by a card scanner.
+		if not isPowerOn then
+			startingRoomDoor.Description = [[The heavy door is frozen halfway open from the power failure.
+There is just enough space to squeeze through to the Holding Centre.]]
+		else
+			startingRoomDoor.Description = [[It's a door protected by a card scanner.
 It leads to the Nova Systems Holding Centre.]]
+		end
 		MoveToRoom(securityRoom)
 	else
 		startingRoomDoor.Name = "Door to Security Room"
-		startingRoomDoor.Description = [[It's a door protected by a card scanner.
+		if not isPowerOn then
+			startingRoomDoor.Description = [[The heavy door is frozen halfway open from the power failure.
+There is just enough space to squeeze through to the Security Room.]]
+		else
+			startingRoomDoor.Description = [[It's a door protected by a card scanner.
 It leads to the Nova Systems Security Room.]]
+		end
 		MoveToRoom(startZone)
 	end
 
